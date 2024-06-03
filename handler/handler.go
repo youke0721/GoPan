@@ -93,6 +93,7 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fsha1 := r.Form.Get("filehash")
+	//使用文件哈希值 fsha1 从全局的文件元信息中获取对应的文件元信息 fm。
 	fm := meta.GetFileMeta(fsha1)
 	f, err := os.Open(fm.Location)
 	if err != nil {
@@ -100,15 +101,60 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
-
+	//读取文件的全部内容，并存储在 data 变量
 	data, err := io.ReadAll(f)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	//设置响应头的 Content-Type 为 application/octet-stream，表示这是一个二进制文件。
 	w.Header().Set("Content-Type", "application/octect-stream")
 	// attachment表示文件将会提示下载到本地，而不是直接在浏览器中打开
 	w.Header().Set("content-disposition", "attachment; filename=\""+fm.FileName+"\"")
 	w.Write(data)
+}
+
+// FileMetaUpdateHandler ： 更新元信息接口(重命名)
+func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	opType := r.Form.Get("op")
+	fileSha1 := r.Form.Get("filehash")
+	newFileName := r.Form.Get("filename")
+
+	if opType != "0" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	curFileMeta := meta.GetFileMeta(fileSha1)
+	curFileMeta.FileName = newFileName
+	meta.UpdateFileMeta(curFileMeta)
+
+	w.WriteHeader(http.StatusOK)
+	data, err := json.Marshal(curFileMeta)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// FileDeleteHandler : 删除文件及元信息
+func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fileSha1 := r.Form.Get("filehash")
+
+	fMeta := meta.GetFileMeta(fileSha1)
+	os.Remove(fMeta.Location)
+
+	meta.RemoveFileMeta(fileSha1)
+
+	w.WriteHeader(http.StatusOK)
+
 }
