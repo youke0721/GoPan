@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"Gopan/meta"
+	"Gopan/util"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +20,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
+		//读取文件并打印
 		data, err := io.ReadAll(file)
 		if err != nil {
 			io.WriteString(w, "read file failed")
@@ -32,18 +36,34 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer file.Close()
-		newFile, err := os.Create("./tmp/" + head.Filename)
+
+		//将文件保存目录参数化，参考create方法的参数改动
+		fileMeta := meta.FileMeta{
+			FileName: head.Filename,
+			Location: "./tmp/" + head.Filename,
+			UploadAt: time.Now().Format("2006-01-06 15:04:05"),
+		}
+		//创建保存文件
+		newFile, err := os.Create("fileMeta.localtion")
 		if err != nil {
 			fmt.Printf("Failed to create file,err:%s\n", err.Error())
 			return
 		}
+		//关闭文件句柄
 		defer newFile.Close()
-
-		_, err = io.Copy(newFile, file)
+		//字节数表示文件的大小，因此将其赋值给 fileMeta.FileSize 字段，这样可以记录上传文件的大小。
+		fileMeta.FileSize, err = io.Copy(newFile, file)
 		if err != nil {
 			fmt.Printf(" Failed to save data inio file err:%s\n", err.Error())
 			return
 		}
+
+		//这一行代码将文件指针（读/写位置）移到文件的起始位置，因为在之前将文件内容写入到文件中时，文件指针已经移到了文件的末尾。
+		newFile.seek(0, 0)
+		//为了计算文件的 SHA1 值，需要重新将文件指针移到起始位置，以便重新读取文件的内容。
+		//计算了上传文件的 SHA1 值
+		fileMeta.FileSha1 = util.FileSha1(newFile)
+		meta.UpdateFileMeta(fileMeta)
 		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
 	}
 }
