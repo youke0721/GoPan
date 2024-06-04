@@ -12,9 +12,10 @@ var db *sql.DB
 
 // init() 函数是 Go 语言中的一个特殊函数,它会在程序启动时自动执行
 func init() {
-	db, _ = sql.Open("mysql", "root:123456@tcp(192.168.222.128)/fileserver?charset=uft8")
+	db, _ = sql.Open("mysql", "root:123456@tcp(192.168.222.128:3306)/fileserver?charset=utf8")
 	db.SetMaxOpenConns(1000)
-	err := db.ping()
+	err := db.Ping()
+	//init() 函数是 Go 语言中的一个特殊函数,它会在程序启动时自动执行,一行代码三行erro
 	if err != nil {
 		fmt.Println("Failed to connect to mysql,err:" + err.Error())
 		os.Exit(1)

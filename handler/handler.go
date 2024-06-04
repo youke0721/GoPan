@@ -64,7 +64,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		//为了计算文件的 SHA1 值，需要重新将文件指针移到起始位置，以便重新读取文件的内容。
 		//计算了上传文件的 SHA1 值
 		fileMeta.FileSha1 = util.FileSha1(newFile)
-		meta.UpdateFileMeta(fileMeta)
+		//meta.UpdateFileMeta(fileMeta)
+		_ = meta.UpdateFileMetaDB(fileMeta)
 		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
 	}
 }
@@ -80,7 +81,8 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	//获取文件的哈希值
 	filehash := r.Form["filehash"][0]
 	//fMeta := meta.GetMeta(filehash)
-	fMeta := meta.GetFileMeta(filehash)
+	//fMeta := meta.GetFileMeta(filehash)
+	fMeta, err := meta.GetFileMetaDB(filehash)
 	data, err := json.Marshal(fMeta)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
