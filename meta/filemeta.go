@@ -41,13 +41,13 @@ func GetFileMeta(fileSha1 string) FileMeta {
 }
 
 // GetFileMetaDB : 从MySQL获取文件元信息
-func GetFileMetaDB(fileSha1 string) (*FileMeta, error) {
+func GetFileMetaDB(fileSha1 string) (*FileMeta, error) { //对象的指针才能表示为nil
 	tfile, err := mydb.GetFileMeta(fileSha1)
 	if tfile == nil || err != nil {
 		return nil, err
 	}
 	fmeta := FileMeta{
-		FileSha1: tfile.FileHash,
+		FileSha1: tfile.FileHash, //需要秋木耳数据类型的转换
 		FileName: tfile.FileName.String,
 		FileSize: tfile.FileSize.Int64,
 		Location: tfile.FileAddr.String,
