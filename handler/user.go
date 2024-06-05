@@ -3,8 +3,10 @@ package handler
 import (
 	dblayer "Gopan/db"
 	"Gopan/util"
+	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -42,4 +44,40 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte("FAILED"))
 	}
+}
+
+// SignInHandler : 登录接口
+func SigninHandler(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	username := r.Form.Get("username")
+	password := r.Form.Get("password")
+
+	encPasswd := util.Sha1([]byte(password + pwdSalt))
+
+	// 1. 校验用户名和密码
+	pwdChecked := dblayer.UserSignin(username, encPasswd)
+	if !pwdChecked {
+		w.Write([]byte("FAILED"))
+		return
+	}
+
+	// 2. 生成访问凭证(token)
+	token := GenToken(username)
+	upRes := dblayer.UpdateToken(username, token)
+	if !upRes {
+		w.Write([]byte("FAILED"))
+		return
+	}
+
+	// 3. 登录成功后重定向到首页
+	w.Write([]byte("http://" + r.Host + "/static/view/home.html"))
+}
+
+// GenToken : 生成token
+func GenToken(username string) string {
+	// 40位字符:md5(username+timestamp+token_salt)+timestamp[:8]
+	ts := fmt.Sprintf("%x", time.Now().Unix())
+	tokenPrefix := util.MD5([]byte(username + ts + "_tokensalt"))
+	return tokenPrefix + ts[:8]
 }
