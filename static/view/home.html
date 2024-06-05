@@ -81,7 +81,6 @@
         var resp = JSON.parse(body);
         document.getElementById("username").innerHTML = resp.data.Username;
         document.getElementById("regtime").innerHTML = resp.data.SignupAt;
-        updateFileList();
       }
     });
   }
